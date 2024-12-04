@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EC Logos Mk.1 WRK Plate Maker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        form label,
+        form select,
+        form button {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        select,
+        button {
+            min-width: 100%;
+            height: 40px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                font-size: 18px;
+            }
+
+            button {
+                padding: 15px 30px;
+                margin-top: 25px;
+            }
+        }
+
+        button {
+            margin-top: 25px;
+        }
+
+        footer {
+            margin-top: 50px;
+        }
+
+        .hidden:not(.always-visible) {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>EC Logos Mk.1 WRK Plate Maker</h1>
+    <p>This plate maker is specifically for the EC Logos Mk.1 WRK PCB (Rev 1.0 and later) and its own screw hole placement.</p>
+    <form id="configForm">
+        <!-- Board Selection -->
+        <label for="board" class="always-visible">Base Board:</label>
+        <select id="board" class="always-visible">
+            <option value="" selected disabled hidden>Choose here</option>
+            <option value="Logos_Mk1_WRK_Mainboard">Logos Mk.1 WRK Mainboard Section</option>
+            <option value="Logos_Mk1_WRK_Numpad">Logos Mk.1 WRK Numpad Section</option>
+        </select>
+
+        <!-- Backspace -->
+        <label for="backspace">Backspace:</label>
+        <select id="backspace">
+            <option value="" selected disabled hidden>Choose here</option>
+            <option value="0">Unified Backspace</option>
+            <option value="1">Split Backspace</option>
+        </select>
+
+        <!-- Right Shift -->
+        <label for="right_shift">Right Shift:</label>
+        <select id="right_shift">
+            <option value="" selected disabled hidden>Choose here</option>
+            <option value="0">Unified Right Shift</option>
+            <option value="1">Split Right Shift</option>
+        </select>
+
+        <!-- Numpad + -->
+        <label for="numpad_plus">Numpad +:</label>
+        <select id="numpad_plus">
+            <option value="" selected disabled hidden>Choose here</option>
+            <option value="0">Unified Numpad +</option>
+            <option value="1">Split Numpad +</option>
+        </select>
+
+        <!-- Numpad Enter -->
+        <label for="numpad_enter">Numpad Enter:</label>
+        <select id="numpad_enter">
+            <option value="" selected disabled hidden>Choose here</option>
+            <option value="0">Unified Numpad Enter</option>
+            <option value="1">Split Numpad Enter</option>
+        </select>
+
+        <!-- Numpad 0 -->
+        <label for="numpad_zero">Numpad 0:</label>
+        <select id="numpad_zero">
+            <option value="" selected disabled hidden>Choose here</option>
+            <option value="0">Unified Numpad 0</option>
+            <option value="1">Split Numpad 0</option>
+        </select>
+
+        <!-- Hole Type -->
+        <label for="hole_type">Hole Type:</label>
+        <select id="hole_type">
+            <option value="" selected disabled hidden>Choose here</option>
+            <option value="Tapped_Holes">Tapped Holes</option>
+            <option value="Densus_Inserts">Densus Inserts</option>
+        </select>
+
+        <button type="submit">Download</button>
+    </form>
+
+    <footer>
+        <p>&copy; 2024 Cipulot</p>
+        <p>All files are provided under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+                target="_blank">CC BY-NC-SA 4.0</a> License.</p>
+        <a href="https://cipulot.squarespace.com/" target="_blank">
+            <img src="https://squarespace.com/favicon.ico" alt="Visit my Squarespace" />
+        </a>
+    </footer>
+
+    <script>
+        $(document).ready(function () {
+            function updateFieldVisibility(boardValue) {
+                // Hide all selects initially
+                $('label, select').not('#board').addClass('hidden');
+
+                // Show fields based on board selection
+                if (boardValue === "Logos_Mk1_WRK_Mainboard") {
+                    $('#backspace, #right_shift, #hole_type').prev('label').removeClass('hidden'); // Show labels
+                    $('#backspace, #right_shift, #hole_type').removeClass('hidden'); // Show fields
+                } else if (boardValue === "Logos_Mk1_WRK_Numpad") {
+                    $('#numpad_plus, #numpad_enter, #numpad_zero, #hole_type').prev('label').removeClass('hidden'); // Show labels
+                    $('#numpad_plus, #numpad_enter, #numpad_zero, #hole_type').removeClass('hidden'); // Show fields
+                }
+            }
+
+            // Handle board selection change
+            $('#board').change(function () {
+                const boardValue = $(this).val();
+                updateFieldVisibility(boardValue);
+            });
+
+            $("#configForm").submit(function (e) {
+                e.preventDefault();
+
+                var boardValue = $("#board").val();
+                if (!boardValue) {
+                    alert("Please select a base board.");
+                    return;
+                }
+
+                var isFormFilled = true;
+                $('select').not('#board, #hole_type').each(function () {
+                    if (!$(this).hasClass('hidden') && $(this).val() == null) {
+                        isFormFilled = false;
+                        return false;
+                    }
+                });
+
+                if (!isFormFilled) {
+                    alert("Please select all configurations for the visible fields.");
+                    return;
+                }
+
+                var configIndices = $('select').not('#board, #hole_type').filter(function () {
+                    return !$(this).hasClass('hidden');
+                }).map(function () {
+                    return $(this).val();
+                }).get();
+
+                var holeType = $("#hole_type").val();
+                if (!holeType) {
+                    alert("Please select a hole type.");
+                    return;
+                }
+
+                if (boardValue === "Logos_Mk1_WRK_Mainboard") {
+                    var filename = boardValue + "_" + configIndices.join('_');
+                }
+                else if (boardValue === "Logos_Mk1_WRK_Numpad") {
+                    var filename = boardValue + "_" + configIndices.join('_');
+                }
+                if (holeType === "Densus_Inserts") {
+                    filename += "_Densus_Inserts";
+                }
+                filename += ".dxf";
+
+                var fileUrl = 'https://api.github.com/repos/Cipulot/logos_mk1_wrk-plate-maker/contents/Plate_Indexed_Name/' + boardValue + '_Plate_Indexed_Name/' + filename;
+                var licenseUrl = 'https://api.github.com/repos/Cipulot/logos_mk1_wrk-plate-maker/contents/LICENSE';
+
+                fetch(fileUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.encoding === 'base64') {
+                            var base64String = data.content.replace(/\n/g, '');
+                            var binaryString = atob(base64String);
+                            var byteArray = new Uint8Array(binaryString.length);
+                            for (var i = 0; i < binaryString.length; i++) {
+                                byteArray[i] = binaryString.charCodeAt(i);
+                            }
+
+                            var zip = new JSZip();
+                            zip.file(filename, byteArray);
+
+                            fetch(licenseUrl)
+                                .then(response => response.json())
+                                .then(licenseData => {
+                                    if (licenseData.encoding === 'base64') {
+                                        var licenseBase64 = licenseData.content.replace(/\n/g, '');
+                                        var licenseBinary = atob(licenseBase64);
+                                        var licenseByteArray = new Uint8Array(licenseBinary.length);
+                                        for (var i = 0; i < licenseBinary.length; i++) {
+                                            licenseByteArray[i] = licenseBinary.charCodeAt(i);
+                                        }
+                                        zip.file("LICENSE", licenseByteArray);
+
+                                        var additionalFiles = [];
+
+                                        if (holeType === "Densus_Inserts") {
+                                            additionalFiles.push('https://api.github.com/repos/Cipulot/ec1_at-plate-maker/contents/densus_ec_insert_design_guide.png',
+                                                'https://api.github.com/repos/Cipulot/ec1_at-plate-maker/contents/simple_counterbore.png');
+                                        } else if (holeType === "Tapped_Holes") {
+                                            additionalFiles.push('https://api.github.com/repos/Cipulot/ec1_at-plate-maker/contents/simple_tapped.png');
+                                        }
+
+                                        Promise.all(additionalFiles.map(fileUrl => fetch(fileUrl).then(response => response.json())))
+                                            .then(fileDataArray => {
+                                                fileDataArray.forEach(fileData => {
+                                                    if (fileData.encoding === 'base64') {
+                                                        var base64 = fileData.content.replace(/\n/g, '');
+                                                        var binary = atob(base64);
+                                                        var byteArray = new Uint8Array(binary.length);
+                                                        for (var i = 0; i < binary.length; i++) {
+                                                            byteArray[i] = binary.charCodeAt(i);
+                                                        }
+                                                        var fileName = fileData.name;
+                                                        zip.file(fileName, byteArray);
+                                                    } else {
+                                                        throw new Error('File content is not base64 encoded: ' + fileData.name);
+                                                    }
+                                                });
+
+                                                zip.generateAsync({ type: "blob" }).then(function (content) {
+                                                    saveAs(content, boardValue + "_" + configIndices.join('_') + (holeType === "Densus_Inserts" ? "_Densus_Inserts.zip" : holeType === "Tapped_Holes" ? "_Tapped_Holes.zip" : ".zip"));
+                                                    alert("Reminder: Please download the other board options if needed.");
+                                                });
+                                            })
+                                            .catch(error => {
+                                                console.error('Error fetching additional files:', error);
+                                            });
+                                    } else {
+                                        throw new Error('License content is not base64 encoded');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error fetching license:', error);
+                                });
+                        } else {
+                            throw new Error('DXF file content is not base64 encoded');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching DXF file:', error);
+                    });
+            });
+
+            // Initialize fields
+            updateFieldVisibility($('#board').val());
+        });
+    </script>
+</body>
+
+</html>
