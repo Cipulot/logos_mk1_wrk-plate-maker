@@ -74,6 +74,22 @@
         <button type="submit">Download</button>
     </form>
 
+    <div id="licenseModal" class="license-modal" aria-hidden="true">
+        <div class="license-modal__backdrop"></div>
+        <div class="license-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="licenseModalTitle">
+            <h2 id="licenseModalTitle">License agreement</h2>
+            <p>
+                By continuing, you agree to the terms of the
+                <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0 License</a>.
+            </p>
+            <div class="license-modal__actions">
+                <button type="button" id="licenseDecline" class="license-modal__button license-modal__button--secondary">Cancel</button>
+                <button type="button" id="licenseAccept" class="license-modal__button">I Agree</button>
+            </div>
+        </div>
+    </div>
+
+
     <footer>
         <p>&copy; 2025 Cipulot</p>
         <p>All files are provided under the <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
@@ -85,6 +101,17 @@
 
     <script>
         $(document).ready(function () {
+            var pendingDownload = null;
+
+            function hideLicenseModal() {
+                $("#licenseModal").removeClass("is-visible").attr("aria-hidden", "true");
+            }
+
+            function showLicenseModal(onAccept) {
+                pendingDownload = onAccept;
+                $("#licenseModal").addClass("is-visible").attr("aria-hidden", "false");
+            }
+
             function updateFieldVisibility(boardValue) {
                 // Hide all selects initially
                 $('label, select').not('#board').addClass('hidden');
@@ -138,6 +165,9 @@
                     alert("Please select a hole type.");
                     return;
                 }
+
+                showLicenseModal(function () {
+                    hideLicenseModal();
 
                 if (boardValue === "Logos_Mk1_WRK_Mainboard") {
                     var filename = boardValue + "_" + configIndices.join('_');
@@ -227,6 +257,19 @@
                     .catch(error => {
                         console.error('Error fetching DXF file:', error);
                     });
+                });
+            });
+
+            $("#licenseAccept").on("click", function () {
+                if (typeof pendingDownload === "function") {
+                    pendingDownload();
+                }
+                pendingDownload = null;
+            });
+
+            $("#licenseDecline, #licenseModal .license-modal__backdrop").on("click", function () {
+                pendingDownload = null;
+                hideLicenseModal();
             });
 
             // Initialize fields
